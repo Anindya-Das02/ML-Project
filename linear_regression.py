@@ -22,9 +22,6 @@ for i in range(2,15):
     times = f.iloc[:8000,[1]].values
 
     tick_dates = []
-    for i in range(len(dates)): 
-        dts = dates[i][0]
-        tms = times[i][0]
     for j in range(len(dates)): 
         dts = dates[j][0]
         tms = times[j][0]
