@@ -5,45 +5,62 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_squared_error
-import datetime
-from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestRegressor
+import datetime
+from math import sqrt
 
+import sys
+
+'''
+Random forest regression model for 300 rows
+'''
 
 f = pd.read_csv("AirQualityUCI.csv")
-dates = f.iloc[:300,0:1].values
-times = f.iloc[:300,1:2].values
-co_con = f.iloc[:300,3:4].values
-tick_dates = []
-for i in range(len(dates)): 
-    dts = dates[i][0]
-    tms = times[i][0]
-    r = dts.split('-')
-    t = tms.split(':')
-    dtr = datetime.datetime(int(r[2]),int(r[1]),int(r[0]),int(t[0]))
-    tick_dates.append([dtr.timestamp()])
 
-x_train,x_test,y_train,y_test = train_test_split(tick_dates,co_con,test_size=0.3,random_state=0)
+rmse_array_train = []
+rmse_array = []
+r2_array = []
+gas_name = list(f.columns.values)
+for i in range(2,15):
+    conc = f.iloc[:300,[i]].values
+    dates = f.iloc[:300,0:1].values
+    times = f.iloc[:300,1:2].values
+    timestamp_array = []
+    for j in range(len(dates)):
+        dts = dates[j][0]
+        tms = times[j][0]
+        r = dts.split('-')
+        t = tms.split(':')
+        dtr = datetime.datetime(int(r[2]),int(r[1]),int(r[0]),int(t[0]))
+        timestamp_array.append([dtr.timestamp()])
 
-reg = RandomForestRegressor(n_estimators=100)
-reg.fit(x_train,y_train)
+    x_train,x_test,y_train,y_test = train_test_split(timestamp_array,conc,test_size=0.2,random_state=0)
+    reg = RandomForestRegressor(n_estimators=100)
+    reg.fit(x_train,y_train)
 
+    y_predictions = reg.predict(y_test)
 
-print("Coefficient of determination R^2 <-- on train set: {}".format(reg.score(x_train, y_train)))
-print("Coefficient of determination R^2 <-- on test set: {}".format(reg.score(x_test, y_test)))
-print("RMSE:{}".format(np.sqrt(mean_squared_error(y_test,reg.predict(y_test)))))
-tr = []
-for i in range(len(x_train)):
-    tr.append(x_train[i][0])
+    print("----")
+    print("gas name: {}".format(gas_name[i]))
+    print("Coefficient of determination R^2 <-- on train set: {}".format(reg.score(x_train, y_train))) 
+    print("Coefficient of determination R^2 <-- on test set: {}".format(reg.score(x_test, y_test)))
+    print("RMSE:{}".format(sqrt(mean_squared_error(y_test,y_predictions))))
+    rmse_array.append(sqrt(mean_squared_error(y_test,y_predictions)))
+    r2_array.append(reg.score(x_test,y_test))
 
-x_train  = tr
-x_grid = np.arange(min(x_train),max(x_train),0.1)
-x_grid = x_grid.reshape((len(x_grid),1))
-plt.scatter(x_train,y_train,color="blue",label="train")
-plt.scatter(x_test,y_test,color="green",label="test")
-plt.plot(x_grid,reg.predict(x_grid))
-plt.legend()
-plt.show()
+    x_grid = np.arange(np.min(x_train),np.max(x_train),1)
+    x_grid = x_grid.reshape((len(x_grid),1))
 
+    plt.scatter(x_train,y_train,color="blue",label="train")
+    plt.scatter(x_test,y_test,color="green",label="test")
+    plt.xlabel("timestamp")
+    plt.ylabel("AQI")
+    plt.title(gas_name[i])
+    plt.plot(x_grid,reg.predict(x_grid),color="red",label="predict")
+    plt.legend()
+    plt.show()
 
-
+print("*** RESULTS: Random Forest ****")
+print("avg RMSE : {}".format(np.mean(rmse_array)))
+print("avg R^2 : {}".format(np.mean(r2_array)))
+print("== END ==")
